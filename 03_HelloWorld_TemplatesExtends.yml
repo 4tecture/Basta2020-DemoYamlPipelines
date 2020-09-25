@@ -1,0 +1,37 @@
+name: 03_HelloWorld_TemplatesExtends
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  webProjects: '**/HelloWorldWeb.csproj'
+  unitTestProjects: '**/*Unit.Tests.csproj'
+  artifactName: 'HelloWorldWeb'
+
+resources:
+  repositories:
+  - repository: templatesRepo
+    type: git
+    name: YamlPipelinesDemo/PipelineTemplates
+    ref: refs/heads/release/v1
+
+extends:
+  template: pipeline/webcibase.yml@templatesRepo 
+  parameters:
+    buildSteps:
+      - template: pipeline/build-and-package-web.yml
+        parameters:
+          projectsToBuild: $(webProjects)
+          unitTestProjects: $(unitTestProjects)
+          buildConfiguration: $(buildConfiguration)
+          pathToPublish: $(Build.ArtifactStagingDirectory)
+    publishSteps:
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish build artifact'
+        inputs:
+          pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+          artifactName: $(artifactName)

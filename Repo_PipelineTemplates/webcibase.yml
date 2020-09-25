@@ -1,0 +1,42 @@
+parameters:
+- name: buildSteps # the name of the parameter is buildSteps
+  type: stepList # data type is StepList
+  default: [] # default value of buildSteps
+- name: publishSteps # the name of the parameter is buildSteps
+  type: stepList # data type is StepList
+  default: [] # default value of buildSteps
+- name: minNumOfExpectedTests
+  default: 1
+
+stages:
+- stage: ci_buildstage
+  jobs:
+  - job: ci_buildjob
+    steps:
+    - template: buildversioning.yml
+    - pwsh: |
+        write-host "Running security scans..."
+        start-sleep 5
+        write-host "Done! 0 vulnerabilities found!" 
+      displayName: 'Run security scans'
+    - ${{ each step in parameters.buildSteps }}:
+      - ${{ each pair in step }}:
+          ${{ if ne(pair.value, 'CmdLine@2') }}:
+            ${{ pair.key }}: ${{ pair.value }}       
+          ${{ if eq(pair.value, 'CmdLine@2') }}: 
+            '${{ pair.value }}': error      
+    - ${{ each step in parameters.publishSteps }}:
+      - ${{ each pair in step }}:
+          ${{ if ne(pair.value, 'CmdLine@2') }}:
+            ${{ pair.key }}: ${{ pair.value }}       
+          ${{ if eq(pair.value, 'CmdLine@2') }}: 
+            '${{ pair.value }}': error      
+  - job: EnsureTests
+    displayName: 'Check for test results'
+    dependsOn: ${{ parameters.dependsOn }}
+    pool: server
+    steps:
+    - task: Ensure tests have executed.@0
+      displayName: 'Check # total tests run'
+      inputs:
+        minNumOfExpectedTests: ${{ parameters.minNumOfExpectedTests }} 

@@ -1,0 +1,35 @@
+name: 05_HelloWorld_Trigger_CI
+
+trigger:
+- master
+
+variables:
+  azureSubscription: 'Microsoft Azure Sponsorship (82d445a5-0bf3-454a-804b-2fd0286650c2)'
+  buildConfiguration: 'Release'
+  webProjects: '**/HelloWorldWeb.csproj'
+  unitTestProjects: '**/*Unit.Tests.csproj'
+  artifactName: 'HelloWorldWeb'
+
+resources:
+  repositories:
+  - repository: templatesRepo
+    type: git
+    name: YamlPipelinesDemo/PipelineTemplates
+    ref: refs/heads/release/v1
+
+extends:
+  template: pipeline/webcibase.yml@templatesRepo 
+  parameters:
+    buildSteps:
+      - template: pipeline/build-and-package-web.yml
+        parameters:
+          projectsToBuild: $(webProjects)
+          unitTestProjects: $(unitTestProjects)
+          buildConfiguration: $(buildConfiguration)
+          pathToPublish: $(Build.ArtifactStagingDirectory)
+    publishSteps:
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish build artifact'
+        inputs:
+          pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+          artifactName: $(artifactName)

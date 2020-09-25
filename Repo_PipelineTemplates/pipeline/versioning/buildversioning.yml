@@ -1,0 +1,27 @@
+# File:           versioning/buildversioning.yml
+# Template type:  Step Template
+# Description:    Add this step to version your current build.
+# Author:         Marc Müller
+# Created:        September 23, 2020
+# Prerequisites:  none
+# Ext. required:  https://marketplace.visualstudio.com/items?itemName=4tecture.BuildVersioning
+
+parameters:
+  gitVersionInstallerSource: 'choco'
+  gitVersionInstallerVersion: '5.0.1'
+
+steps:
+- task: 4tecture.BuildVersioning.BuildVersioning.BuildVersioning@0
+  displayName: 'Build Versioning using GitVersion'
+  inputs:
+    versionSource: gitversion
+    paramAssemblyVersion: 7
+    paramAssemblyFileVersion: 7
+    paramAssemblyInformationalVersion: 6
+    doConvertAssemblyInfoToLowerCase: true
+    buildNumberAction: replace
+    doReplaceDotNetCore: true
+    doInstallGitVersion: true
+    GitVersionInstallerSource: ${{ parameters.gitVersionInstallerSource }}
+    GitVersionInstallerVersion: ${{ parameters.gitVersionInstallerVersion }}
+    doUseLatestGitVersionInstallerVersion: false

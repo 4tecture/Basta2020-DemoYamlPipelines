@@ -1,0 +1,34 @@
+name: 02_HelloWorld_Templates
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  webProjects: '**/HelloWorldWeb.csproj'
+  unitTestProjects: '**/*Unit.Tests.csproj'
+  artifactName: 'HelloWorldWeb'
+
+resources:
+  repositories:
+  - repository: templatesRepo
+    type: git
+    name: YamlPipelinesDemo/PipelineTemplates
+    ref: refs/heads/release/v1
+
+steps:
+- template: pipeline/versioning/buildversioning.yml@templatesRepo
+- template: pipeline/build-and-package-web.yml
+  parameters:
+    projectsToBuild: $(webProjects)
+    unitTestProjects: $(unitTestProjects)
+    buildConfiguration: $(buildConfiguration)
+    pathToPublish: $(Build.ArtifactStagingDirectory)
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish build artifact'
+  inputs:
+    pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+    artifactName: $(artifactName)

@@ -1,0 +1,84 @@
+name: 04_HelloWorld
+
+trigger:
+- master
+
+variables:
+  azureSubscription: 'Microsoft Azure Sponsorship (82d445a5-0bf3-454a-804b-2fd0286650c2)'
+  artifactName: 'HelloWorldWeb'
+
+resources:
+  repositories:
+  - repository: templatesRepo
+    type: git
+    name: YamlPipelinesDemo/PipelineTemplates
+    ref: refs/heads/release/v1 
+
+stages:
+- stage: build
+  displayName: 'Build the Application'
+  jobs:
+  - job: CI_Build
+    displayName: 'CI build web application'
+    pool:
+      vmImage: 'ubuntu-latest'
+    variables:
+      buildConfiguration: 'Release'
+      unitTestProjects: '**/*Unit.Tests.csproj'
+    steps:
+    - template: pipeline/versioning/buildversioning.yml@templatesRepo
+    - template: pipeline/build-and-package-web.yml
+    - publish: '$(Build.ArtifactStagingDirectory)'
+      artifact: '$(artifactName)'
+      displayName: 'Create pipeline artifact for web app'
+
+- stage: staging
+  dependsOn: build
+  displayName: 'Staging Deployment'
+  jobs:
+  - deployment: staging
+    displayName: 'Deploy HelloWorld to staging web app'
+    environment: helloworldweb-staging
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+     runOnce:
+       deploy:
+         steps:
+         - download: current
+           artifact: '$(artifactName)'
+           displayName: 'Download pipeline artifacts'
+         - task: AzureWebApp@1
+           displayName: 'Deploy to azure web app staging'
+           inputs:
+             azureSubscription: 'Microsoft Azure Sponsorship (82d445a5-0bf3-454a-804b-2fd0286650c2)'
+             appType: 'webApp'
+             appName: 'helloworldweb-staging'
+             package: '$(Pipeline.Workspace)/**/HelloWorldWeb.zip'
+             deploymentMethod: 'auto'
+
+- stage: prod
+  dependsOn: staging
+  displayName: 'Prod Deployment'
+  jobs:
+  - deployment: prod
+    displayName: 'Deploy HelloWorld to prod web app'
+    environment: helloworldweb-prod
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+     runOnce:
+       deploy:
+         steps:
+         - download: current
+           artifact: '$(artifactName)'
+           displayName: 'Download pipeline artifacts'
+         - task: AzureWebApp@1
+           displayName: 'Deploy to azure web app prod'
+           inputs:
+             azureSubscription: 'Microsoft Azure Sponsorship (82d445a5-0bf3-454a-804b-2fd0286650c2)'
+             appType: 'webApp'
+             appName: 'helloworldweb-prod'
+             package: '$(Pipeline.Workspace)/**/HelloWorldWeb.zip'
+             deploymentMethod: 'auto'
+    

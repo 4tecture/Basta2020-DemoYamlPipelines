@@ -1,0 +1,22 @@
+# File:           Jobs/ensure-tests.yml
+# Template type:  Job Template
+# Description:    Add this job to your build stage to ensure tests were run.
+# Author:         Neno Loje
+# Created:        July 27, 2019
+# Prerequisites:  Add a "dependsOn" attribute, so this job runs after your build job.
+# Ext. required:  https://marketplace.visualstudio.com/items?itemName=jessehouwing.vsts-ensure-tests-tasks
+
+parameters:
+  minNumOfExpectedTests: 1
+  dependsOn: 'Build'
+
+jobs:
+- job: EnsureTests
+  displayName: 'Check for test results'
+  dependsOn: ${{ parameters.dependsOn }}
+  pool: server
+  steps:
+  - task: Ensure tests have executed.@0
+    displayName: 'Check # total tests run'
+    inputs:
+      minNumOfExpectedTests: ${{ parameters.minNumOfExpectedTests }}

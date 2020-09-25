@@ -1,0 +1,37 @@
+parameters:
+  projectsToBuild: '**/*.csproj'
+  unitTestProjects: '**/*Test*.csproj'
+  buildConfiguration: release
+  pathToPublish: $(Build.ArtifactStagingDirectory)
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET Core SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '3.1.x'
+- task: DotNetCoreCLI@2
+  displayName: 'Build in Configuration ${{ parameters.buildConfiguration }}'
+  inputs:
+    command: 'build'
+    projects: |
+      ${{ parameters.projectsToBuild }}
+      ${{ parameters.unitTestProjects }}
+    arguments: '--configuration ${{ parameters.buildConfiguration }}'
+- task: DotNetCoreCLI@2
+  displayName: 'Run unit tests'
+  inputs:
+    command: test
+    projects: ${{ parameters.unitTestProjects }}
+    arguments: '--configuration ${{ parameters.buildConfiguration }}  --collect "Code coverage" --logger trx --no-build'
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '**/*.trx'
+- task: DotNetCoreCLI@2
+  displayName: 'Publish web application'
+  inputs:
+    command: publish
+    publishWebProjects: True
+    arguments: '--configuration ${{ parameters.buildConfiguration }} --output ${{ parameters.pathToPublish }} --no-build'
+    zipAfterPublish: True

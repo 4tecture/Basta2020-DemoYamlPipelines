@@ -1,0 +1,66 @@
+name: 05_HelloWorld_Trigger_CD
+
+trigger: none
+
+variables:
+  azureSubscription: 'Microsoft Azure Sponsorship (82d445a5-0bf3-454a-804b-2fd0286650c2)'
+  artifactName: 'HelloWorldWeb'
+
+resources:
+ pipelines:
+   - pipeline: CIBuild
+     source: 05_HelloWorld_Trigger_CI
+     trigger:
+       branches:
+        include:
+          - master
+
+stages:
+- stage: staging
+  displayName: 'Staging Deployment'
+  jobs:
+  - deployment: staging
+    displayName: 'Deploy HelloWorld to staging web app'
+    environment: helloworldweb-staging
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+     runOnce:
+       deploy:
+         steps:
+         - download: CIBuild
+           artifact: 'HelloWorldWeb'
+           displayName: 'Download pipeline artifacts'
+         - task: AzureWebApp@1
+           displayName: 'Deploy to azure web app staging'
+           inputs:
+             azureSubscription: 'Microsoft Azure Sponsorship (82d445a5-0bf3-454a-804b-2fd0286650c2)'
+             appType: 'webApp'
+             appName: 'helloworldweb-staging'
+             package: '$(Pipeline.Workspace)/**/HelloWorldWeb.zip'
+             deploymentMethod: 'auto'
+- stage: prod
+  dependsOn: staging
+  displayName: 'Prod Deployment'
+  jobs:
+  - deployment: prod
+    displayName: 'Deploy HelloWorld to prod web app'
+    environment: helloworldweb-prod
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+     runOnce:
+       deploy:
+         steps:
+         - download: CIBuild
+           artifact: 'HelloWorldWeb'
+           displayName: 'Download pipeline artifacts'
+         - task: AzureWebApp@1
+           displayName: 'Deploy to azure web app prod'
+           inputs:
+             azureSubscription: 'Microsoft Azure Sponsorship (82d445a5-0bf3-454a-804b-2fd0286650c2)'
+             appType: 'webApp'
+             appName: 'helloworldweb-prod'
+             package: '$(Pipeline.Workspace)/**/HelloWorldWeb.zip'
+             deploymentMethod: 'auto'
+    
